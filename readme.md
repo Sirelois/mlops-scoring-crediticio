@@ -1,6 +1,6 @@
 # MLOps – Modelo de Riesgo Crediticio
 
-Proyecto Integrador del Módulo 5 (MLOps) – Data Science, Henry.
+Proyecto Integrador del Módulo 5 (MLOps).
 
 ## 1. Caso de negocio
 
@@ -28,7 +28,10 @@ Como solo ~5% de los clientes no paga, un modelo que aprueba a todos tendría 95
 │       ├── modelo_scoring.joblib            # Modelo final entrenado
 │       └── comparacion_modelos_cv.png       # Gráfico comparativo de modelos
 ├── Base_de_datos.csv
-├── requirements.txt
+├── requirements.txt                          # Dependencias del proyecto completo
+├── requirements-api.txt                      # Dependencias mínimas de la API (Docker)
+├── Dockerfile                                # Imagen de la API
+├── .dockerignore
 ├── .gitignore
 └── readme.md
 ```
@@ -43,6 +46,7 @@ El repositorio tiene tres ramas: `developer`, `certification` y `master`. El tra
 | v1.0.1 | Carga de datos y EDA |
 | v1.1.0 | Ingeniería de características y comparación de modelos |
 | v1.2.0 | Monitoreo de data drift, app Streamlit, mejora del modelo y README |
+| v1.3.0 | API del modelo con FastAPI e imagen Docker |
 
 ## 4. Datos y hallazgos del EDA
 
@@ -138,7 +142,59 @@ Umbrales de alerta: PSI > 0,10 moderado y > 0,25 crítico; p-value < 0,05 en KS 
 
 `app_streamlit.py` muestra una tabla con semáforo por variable y los histogramas comparativos histórico vs. actual.
 
-## 8. Cómo ejecutar el proyecto
+## 8. Despliegue: API y Docker
+
+`model_deploy.py` disponibiliza el modelo mediante una API REST con **FastAPI**. Carga `modelo_scoring.joblib`, que contiene el pipeline completo (preprocesamiento + Random Forest) y el umbral de negocio. Así, la API aplica exactamente las mismas transformaciones que se usaron en el entrenamiento.
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | `/` | Estado de la API, modelo cargado, umbral y métricas de test |
+| GET | `/columnas` | Variables que espera el modelo |
+| POST | `/predict` | Predicción para uno o varios clientes |
+
+**Ejemplo de solicitud** (`POST /predict`):
+
+```json
+{
+  "registros": [
+    {"tipo_credito": 4, "capital_prestado": 840000.0, "plazo_meses": 6, "edad_cliente": 60,
+     "tipo_laboral": "Empleado", "salario_cliente": 3000000, "total_otros_prestamos": 2000000,
+     "puntaje_datacredito": 789.0, "cant_creditosvigentes": 3, "huella_consulta": 1,
+     "saldo_mora": 0.0, "saldo_total": 8673.0, "saldo_mora_codeudor": 0.0,
+     "creditos_sectorCooperativo": 0, "creditos_sectorReal": 2,
+     "promedio_ingresos_datacredito": 939017.0, "tendencia_ingresos": "Creciente"}
+  ]
+}
+```
+
+**Respuesta:**
+
+```json
+{
+  "modelo": "random_forest",
+  "umbral": 0.2526,
+  "predicciones": [
+    {"indice": 0, "probabilidad_no_pago": 0.1259, "riesgo_alto": false,
+     "recomendacion": "Aprobación sugerida"}
+  ],
+  "advertencias": []
+}
+```
+
+La API es robusta ante datos incompletos: si falta una variable, o si una categoría no es reconocida, la imputa con el mismo criterio del entrenamiento y lo informa en `advertencias`, en lugar de devolver un error.
+
+### Imagen Docker
+
+La imagen usa `python:3.13-slim` e instala solo las dependencias de `requirements-api.txt`, con las mismas versiones con las que se entrenó el modelo. Esto garantiza que las predicciones del contenedor sean idénticas a las del entorno de desarrollo, algo que se verificó comparando la salida de ambos para los mismos clientes.
+
+```bash
+docker build -t scoring-api .
+docker run -p 8000:8000 scoring-api
+```
+
+Documentación interactiva en `http://localhost:8000/docs`.
+
+## 9. Cómo ejecutar el proyecto
 
 Requiere **Python 3.13**. Las versiones de las librerías están fijadas en `requirements.txt` porque el modelo guardado (`.joblib`) depende de ellas.
 
@@ -164,6 +220,12 @@ streamlit run mlops_pipeline/src/app_streamlit.py
 
 El dashboard queda disponible en `http://localhost:8501`.
 
-## 9. Stack tecnológico
+Para levantar la API sin Docker:
 
-Python · pandas · numpy · scikit-learn · XGBoost · SciPy · matplotlib · seaborn · Streamlit · FastAPI · Git/GitHub
+```bash
+uvicorn model_deploy:app --app-dir mlops_pipeline/src --reload
+```
+
+## 10. Stack tecnológico
+
+Python · pandas · numpy · scikit-learn · XGBoost · SciPy · matplotlib · seaborn · Streamlit · FastAPI · Uvicorn · Docker · Git/GitHub

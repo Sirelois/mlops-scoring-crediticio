@@ -1,0 +1,10 @@
+# Dependencias mínimas de la API (imagen Docker).
+# Mismas versiones que requirements.txt: el modelo entrenado (.joblib) depende de ellas.
+pandas==3.0.3
+numpy==2.4.6
+scikit-learn==1.8.0
+scipy==1.17.1
+joblib==1.5.3
+fastapi==0.141.1
+pydantic==2.13.5
+uvicorn[standard]==0.52.4
