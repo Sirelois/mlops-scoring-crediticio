@@ -1,6 +1,6 @@
 # MLOps – Modelo de Riesgo Crediticio
 
-Proyecto Integrador del Módulo 5 (MLOps).
+Proyecto Integrador del Módulo 5 (MLOps) – Data Science, Henry.
 
 ## 1. Caso de negocio
 
@@ -47,6 +47,7 @@ El repositorio tiene tres ramas: `developer`, `certification` y `master`. El tra
 | v1.1.0 | Ingeniería de características y comparación de modelos |
 | v1.2.0 | Monitoreo de data drift, app Streamlit, mejora del modelo y README |
 | v1.3.0 | API del modelo con FastAPI e imagen Docker |
+| v1.3.1 | Documentación de experimentos descartados |
 
 ## 4. Datos y hallazgos del EDA
 
@@ -124,6 +125,28 @@ La v2 detecta **más morosos rechazando menos buenos clientes**.
 La señal de los datos es débil (ROC-AUC ~0,67): de cada 13 solicitudes que el modelo marca, 1 corresponde a un moroso. Por eso **no se recomienda usarlo para rechazar automáticamente**, sino para **priorizar solicitudes a revisión manual**. Con ese uso, el equipo de riesgo concentra su análisis en el 40% de las solicitudes donde está el 63% de los morosos.
 
 El umbral es un parámetro de negocio (`RECALL_OBJETIVO` en `model_training_evaluation.py`). Si el costo de un impago sube frente al de perder un cliente, se baja el umbral, y viceversa.
+
+### Experimentos descartados
+
+Después de elegir el modelo final se probaron variables derivadas que, desde la lógica de negocio, deberían indicar capacidad de pago. Cada una se evaluó con el mismo Random Forest (mismos hiperparámetros), con y sin la variable nueva, en **validación cruzada repetida (5 folds × 3 repeticiones = 15 particiones)**. Las particiones son idénticas para ambas versiones, lo que permite una comparación pareada.
+
+**Criterio de adopción:** mejorar el PR-AUC en la mayoría de las 15 particiones, con una diferencia promedio mayor que su propia variabilidad.
+
+| Variable probada | Hipótesis | Δ PR-AUC CV | Particiones que mejoraron | Δ PR-AUC test | Decisión |
+|---|---|---|---|---|---|
+| `capital_prestado / salario_cliente` | Endeudamiento relativo al ingreso | −0,003 ± 0,010 | 8 / 15 | +0,008 | Descartada |
+| `cuota_pactada / salario_cliente` | Carga mensual sobre el ingreso declarado | −0,004 ± 0,012 | 5 / 15 | +0,012 | Descartada |
+| `cuota_pactada / promedio_ingresos_datacredito` | Ídem, con el ingreso informado por el buró | −0,003 ± 0,012 | 7 / 15 | +0,011 | Descartada |
+
+**Lectura de los resultados:**
+
+- En validación cruzada, ninguna variable mejora de forma consistente: la diferencia es menor que el ruido y el número de particiones que mejoran es equivalente al azar.
+- En test, las tres suben levemente. No se toma como evidencia: el test es una única partición con 102 morosos, y las tres variables comparten esa partición y miden información similar. No son tres confirmaciones independientes, sino la misma variación vista tres veces. Adoptarlas por el resultado de test sería elegir la métrica que confirma la hipótesis.
+- El ratio con el ingreso del buró rinde igual que con el ingreso declarado, por lo que la calidad del dato de ingreso no explica la falta de mejora.
+
+**Conclusión:** en este dataset, las medidas de capacidad de pago no agregan información a la que el modelo ya obtiene de las variables originales. Esto sugiere que los impagos dependen en buena medida de factores que no están registrados (cambios laborales, imprevistos, comportamiento), y que las próximas mejoras deberían venir de **incorporar fuentes de datos nuevas** más que de transformar las existentes o cambiar de algoritmo.
+
+**Nota metodológica:** con 15 particiones, el PR-AUC del modelo base es 0,147 ± 0,028, algo menor que el 0,156 obtenido con 5 particiones durante la selección. La diferencia muestra la variabilidad propia de estimar con pocas repeticiones y refuerza la importancia de reportar el desvío junto al promedio.
 
 ## 7. Monitoreo de data drift
 
