@@ -1,0 +1,7 @@
+.git
+.agents
+.claude
+**/__pycache__
+**/*.ipynb
+*.xlsx
+*.csv
