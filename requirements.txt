@@ -1,15 +1,25 @@
-pandas
-numpy
-openpyxl
-python-dotenv
-db-dtypes
+# --- Núcleo del modelo (versiones fijas: el .joblib depende de ellas) ---
+pandas==3.0.3
+numpy==2.4.6
+scikit-learn==1.8.0
+xgboost==3.2.0
+joblib==1.5.3
+scipy==1.17.1
+
+# --- Datos y visualización ---
+openpyxl==3.1.5
+matplotlib==3.10.9
+seaborn==0.13.2
+python-dotenv==1.2.2
+
+# --- App de monitoreo y API ---
+streamlit==1.64.0
+fastapi==0.141.1
+pydantic==2.13.5
+uvicorn[standard]==0.52.4
+
+# --- Entorno de desarrollo (notebooks) ---
 jupyter
 notebook
 ipykernel
-seaborn
 ipywidgets
-scikit-learn
-xgboost
-pydantic
-fastapi
-uvicorn[standard]

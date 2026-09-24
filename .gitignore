@@ -1,0 +1,7 @@
+*.xlsx
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+.env
+.agents/
+.claude/
