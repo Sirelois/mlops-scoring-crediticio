@@ -1,6 +1,6 @@
 """
 model_monitoring.py
-Monitoreo y detección de Data Drift para el modelo de Scoring Crediticio (PI M5).
+Monitoreo y detección de Data Drift para el modelo de Scoring Crediticio.
 
 Compara la distribución de la población "histórica" (créditos más antiguos)
 contra la población "actual" (créditos más recientes) para detectar cambios
