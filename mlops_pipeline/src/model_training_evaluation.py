@@ -299,27 +299,29 @@ def main():
     imprimir_justificacion(ganador, busquedas[ganador].best_score_, metricas, ref)
 
 
-# ------------------------------------------------------------------
-# Justificación de la selección
-# ------------------------------------------------------------------
-# Por qué NO se elige por Recall con umbral 0.5 (criterio de la v1):
-#   el recall depende del umbral. Comparar recalls a 0.5 entre modelos solo
-#   muestra cuál tiene las probabilidades más corridas hacia "no paga", no cuál
-#   distingue mejor morosos de buenos pagadores. En la v1 esto llevó a elegir
-#   Logistic Regression, que para detectar 48% de morosos marcaba ~910 de 2153
-#   clientes (lift ~1.15, casi azar).
-#
-# Criterio de la v2:
-#   1) Se elige el modelo que mejor ORDENA a los clientes por riesgo
-#      (PR-AUC de la clase "no paga", validación cruzada en train). PR-AUC es
-#      preferible a ROC-AUC con 95/5 de desbalance porque se concentra en la
-#      clase minoritaria.
-#   2) El umbral se fija DESPUÉS, con un criterio de negocio (recall objetivo),
-#      usando predicciones out-of-fold para no contaminar el test.
-#
-# Limitación: la señal de los datos es débil (ROC-AUC ~0.67). El modelo sirve
-# para priorizar solicitudes a revisión manual, no para rechazar automáticamente.
 def imprimir_justificacion(ganador: str, pr_auc_cv: float, m: dict, marcados_ref: int):
+    """
+    ------------------------------------------------------------------
+    Justificación de la selección
+    ------------------------------------------------------------------
+    Por qué NO se elige por Recall con umbral 0.5 (criterio de la v1):
+    el recall depende del umbral. Comparar recalls a 0.5 entre modelos solo
+    muestra cuál tiene las probabilidades más corridas hacia "no paga", no cuál
+    distingue mejor morosos de buenos pagadores. En la v1 esto llevó a elegir
+    Logistic Regression, que para detectar 48% de morosos marcaba ~910 de 2153
+    clientes (lift ~1.15, casi azar).
+
+    Criterio de la v2:
+    1) Se elige el modelo que mejor ORDENA a los clientes por riesgo
+        (PR-AUC de la clase "no paga", validación cruzada en train). PR-AUC es
+        preferible a ROC-AUC con 95/5 de desbalance porque se concentra en la
+        clase minoritaria.
+    2) El umbral se fija DESPUÉS, con un criterio de negocio (recall objetivo),
+        usando predicciones out-of-fold para no contaminar el test.
+
+    Limitación: la señal de los datos es débil (ROC-AUC ~0.67). El modelo sirve
+    para priorizar solicitudes a revisión manual, no para rechazar automáticamente.
+    """
     tasa_base = m["morosos_totales"] / (m["clientes_marcados"] / m["pct_marcados"])
     print("\n" + "=" * 70)
     print(f"MODELO SELECCIONADO: {ganador}")
